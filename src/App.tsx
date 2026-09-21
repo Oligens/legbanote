@@ -1,124 +1,118 @@
 import { useState } from 'react';
-import BackendOverview from './components/BackendOverview';
-import AuthSystem from './components/AuthSystem';
-import DatabaseSchema from './components/DatabaseSchema';
-import DocumentStorage from './components/DocumentStorage';
-import ApiRoutes from './components/ApiRoutes';
-import SecurityView from './components/SecurityView';
-import VoiceDictationView from './components/VoiceDictationView';
+import AuthScreen from './components/AuthScreen';
+import LibraryScreen from './components/LibraryScreen';
+import ChatScreen from './components/ChatScreen';
+import VoiceSettingsScreen from './components/VoiceSettingsScreen';
 import LegbaIcon from './components/LegbaIcon';
 
-type Section = 'overview' | 'auth' | 'database' | 'storage' | 'routes' | 'security' | 'voice';
+export type Screen = 'auth' | 'library' | 'chat' | 'voice';
 
 export default function App() {
-  const [activeSection, setActiveSection] = useState<Section>('overview');
+  const [activeScreen, setActiveScreen] = useState<Screen>('auth');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  const sections: { id: Section; label: string; icon: string; shortLabel: string }[] = [
-    { id: 'overview', label: 'Vue d\'Ensemble', icon: '🏗️', shortLabel: 'Overview' },
-    { id: 'auth', label: 'Authentification', icon: '🔐', shortLabel: 'Auth' },
-    { id: 'database', label: 'Base de Données', icon: '🗄️', shortLabel: 'Schema' },
-    { id: 'storage', label: 'Stockage Documents', icon: '📁', shortLabel: 'Storage' },
-    { id: 'routes', label: 'Routes API', icon: '🔀', shortLabel: 'Routes' },
-    { id: 'security', label: 'Sécurité & RAM', icon: '🛡️', shortLabel: 'Security' },
-    { id: 'voice', label: 'Dictée Vocale', icon: '🎙️', shortLabel: 'Voice' },
-  ];
-
-  const renderSection = () => {
-    switch (activeSection) {
-      case 'overview': return <BackendOverview />;
-      case 'auth': return <AuthSystem />;
-      case 'database': return <DatabaseSchema />;
-      case 'storage': return <DocumentStorage />;
-      case 'routes': return <ApiRoutes />;
-      case 'security': return <SecurityView />;
-      case 'voice': return <VoiceDictationView />;
-      default: return <BackendOverview />;
-    }
+  const handleLogin = () => {
+    setIsAuthenticated(true);
+    setActiveScreen('library');
   };
 
-  return (
-    <div className="min-h-screen bg-sand-light">
-      {/* Header */}
-      <header className="bg-gradient-to-r from-indigo-dark via-indigo to-caribbean-dark text-white relative overflow-hidden">
-        {/* Background decoration */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-4 right-8 animate-float">
-            <LegbaIcon className="w-20 h-20" color="white" />
-          </div>
-          <div className="absolute bottom-2 left-12 animate-breathe">
-            <LegbaIcon className="w-12 h-12" color="white" />
-          </div>
-        </div>
+  const navItems: { id: Screen; label: string; icon: JSX.Element }[] = [
+    {
+      id: 'library',
+      label: 'Bibliothèque',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+        </svg>
+      ),
+    },
+    {
+      id: 'chat',
+      label: 'Legba IA',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+        </svg>
+      ),
+    },
+    {
+      id: 'voice',
+      label: 'Vocal',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+        </svg>
+      ),
+    },
+  ];
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
-          <div className="flex items-center gap-4 mb-4">
-            <div className="w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-sm flex items-center justify-center border border-white/20 animate-lock-pulse">
-              <LegbaIcon className="w-8 h-8" color="white" />
+  if (!isAuthenticated) {
+    return <AuthScreen onLogin={handleLogin} />;
+  }
+
+  return (
+    <div className="h-screen w-screen bg-gradient-deep overflow-hidden relative">
+      {/* Ambient Background Effects */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] rounded-full bg-cyan-neon/5 blur-[100px]"></div>
+        <div className="absolute bottom-[-20%] right-[-10%] w-[600px] h-[600px] rounded-full bg-metallic-gold/5 blur-[120px]"></div>
+        <div className="absolute top-[40%] right-[20%] w-[300px] h-[300px] rounded-full bg-cyan-neon/3 blur-[80px]"></div>
+      </div>
+
+      {/* Main Content */}
+      <div className="relative z-10 h-full flex flex-col">
+        {/* Header */}
+        <header className="px-5 pt-4 pb-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl glass-card flex items-center justify-center">
+              <LegbaIcon className="w-6 h-6" color="#00FFFF" />
             </div>
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold">Legba Note</h1>
-              <p className="text-sm text-white/70">Architecture Backend Local Sécurisée</p>
+              <h1 className="text-sm font-bold text-white">Legba Note</h1>
+              <p className="text-[10px] text-text-muted">
+                {activeScreen === 'library' && 'Bibliothèque de cours'}
+                {activeScreen === 'chat' && 'Assistant IA RAG'}
+                {activeScreen === 'voice' && 'Configuration vocale'}
+              </p>
             </div>
           </div>
-          <div className="flex flex-wrap gap-2 mt-4">
-            {['100% Local', 'Zero-Knowledge Auth', 'SQLCipher', 'Biométrie', '8 Go RAM'].map((tag) => (
-              <span key={tag} className="text-[10px] bg-white/10 text-white/80 px-2.5 py-1 rounded-full border border-white/10 backdrop-blur-sm">
-                {tag}
-              </span>
-            ))}
-          </div>
-          <p className="text-white/80 max-w-3xl text-sm sm:text-base leading-relaxed mt-4">
-            Infrastructure 100% locale et sécurisée. Aucune donnée ne transite par un serveur tiers distant, 
-            à l'exception des requêtes finales vers l'API Gemini. Authentification Zero-Knowledge, 
-            chiffrement SQLCipher, et optimisation mémoire pour appareils à 8 Go RAM.
-          </p>
-        </div>
-      </header>
+          <button
+            onClick={() => { setIsAuthenticated(false); setActiveScreen('auth'); }}
+            className="w-9 h-9 rounded-xl glass-card flex items-center justify-center hover:bg-glass-white-hover transition-colors"
+          >
+            <svg className="w-4 h-4 text-text-secondary" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+          </button>
+        </header>
 
-      {/* Navigation */}
-      <nav className="bg-white border-b border-sand-dark/20 sticky top-0 z-50 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-1 overflow-x-auto py-2 scrollbar-hide">
-            {sections.map((section) => (
+        {/* Screen Content */}
+        <div className="flex-1 overflow-hidden">
+          {activeScreen === 'library' && <LibraryScreen onNavigate={setActiveScreen} />}
+          {activeScreen === 'chat' && <ChatScreen />}
+          {activeScreen === 'voice' && <VoiceSettingsScreen />}
+        </div>
+
+        {/* Bottom Navigation */}
+        <nav className="px-4 pb-4 pt-2">
+          <div className="glass-card rounded-2xl p-1.5 flex items-center justify-around">
+            {navItems.map((item) => (
               <button
-                key={section.id}
-                onClick={() => setActiveSection(section.id)}
-                className={`flex items-center gap-2 px-3 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-medium whitespace-nowrap transition-all duration-300 ${
-                  activeSection === section.id
-                    ? 'bg-indigo text-white shadow-md shadow-indigo/20'
-                    : 'text-gray-500 hover:text-indigo hover:bg-indigo/5'
+                key={item.id}
+                onClick={() => setActiveScreen(item.id)}
+                className={`flex flex-col items-center gap-1 px-4 py-2.5 rounded-xl transition-all duration-300 ${
+                  activeScreen === item.id
+                    ? 'bg-gradient-to-r from-cyan-neon/20 to-cyan-neon/10 border border-cyan-neon/30 shadow-[0_0_20px_rgba(0,255,255,0.2)]'
+                    : 'text-text-muted hover:text-text-secondary'
                 }`}
               >
-                <span>{section.icon}</span>
-                <span className="hidden sm:inline">{section.label}</span>
-                <span className="sm:hidden">{section.shortLabel}</span>
+                <span className={activeScreen === item.id ? 'text-cyan-neon' : ''}>{item.icon}</span>
+                <span className="text-[10px] font-medium">{item.label}</span>
               </button>
             ))}
           </div>
-        </div>
-      </nav>
-
-      {/* Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {renderSection()}
-      </main>
-
-      {/* Footer */}
-      <footer className="bg-indigo-dark text-white/60 py-6 mt-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <LegbaIcon className="w-5 h-5" color="rgba(255,255,255,0.6)" />
-              <span className="text-sm font-medium text-white/80">Legba Note</span>
-              <span className="text-xs text-white/40">•</span>
-              <span className="text-xs text-white/50">Backend Local v2.0</span>
-            </div>
-            <p className="text-xs text-white/40">
-              Gardien de votre savoir — Architecture 100% locale et sécurisée
-            </p>
-          </div>
-        </div>
-      </footer>
+        </nav>
+      </div>
     </div>
   );
 }
