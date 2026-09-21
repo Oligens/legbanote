@@ -15,22 +15,6 @@
   --color-indigo-dark: #2A1450;
 }
 
-@keyframes pulse-ring {
-  0% { transform: scale(0.8); opacity: 0.8; }
-  50% { transform: scale(1.2); opacity: 0.3; }
-  100% { transform: scale(0.8); opacity: 0.8; }
-}
-
-@keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-6px); }
-}
-
-@keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-}
-
 @keyframes fadeInUp {
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
@@ -41,15 +25,20 @@
   to { opacity: 1; transform: translateX(0); }
 }
 
-@keyframes flowRight {
-  0% { transform: translateX(-100%); opacity: 0; }
-  50% { opacity: 1; }
-  100% { transform: translateX(100%); opacity: 0; }
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-6px); }
 }
 
 @keyframes breathe {
-  0%, 100% { transform: scale(1); opacity: 0.6; }
+  0%, 100% { transform: scale(1); opacity: 0.7; }
   50% { transform: scale(1.05); opacity: 1; }
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(0.8); opacity: 0.8; }
+  50% { transform: scale(1.2); opacity: 0.3; }
+  100% { transform: scale(0.8); opacity: 0.8; }
 }
 
 @keyframes dataFlow {
@@ -57,14 +46,14 @@
   100% { stroke-dashoffset: 0; }
 }
 
-.animate-float {
-  animation: float 3s ease-in-out infinite;
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(30px); }
+  to { opacity: 1; transform: translateX(0); }
 }
 
-.animate-shimmer {
-  background: linear-gradient(90deg, transparent 0%, rgba(61, 30, 109, 0.08) 50%, transparent 100%);
-  background-size: 200% 100%;
-  animation: shimmer 2s ease-in-out infinite;
+@keyframes lockPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(61, 30, 109, 0.4); }
+  50% { box-shadow: 0 0 0 12px rgba(61, 30, 109, 0); }
 }
 
 .animate-fade-in-up {
@@ -75,16 +64,24 @@
   animation: fadeInLeft 0.5s ease-out forwards;
 }
 
-.animate-flow-right {
-  animation: flowRight 2s ease-in-out infinite;
+.animate-float {
+  animation: float 3s ease-in-out infinite;
 }
 
 .animate-breathe {
   animation: breathe 3s ease-in-out infinite;
 }
 
-.animate-data-flow {
-  animation: dataFlow 1.5s linear infinite;
+.animate-pulse-ring {
+  animation: pulse-ring 2s ease-in-out infinite;
+}
+
+.animate-slide-in {
+  animation: slideIn 0.4s ease-out forwards;
+}
+
+.animate-lock-pulse {
+  animation: lockPulse 2s ease-in-out infinite;
 }
 
 /* Scrollbar */
@@ -113,16 +110,34 @@ body {
   background-color: #FDF6EE;
 }
 
-/* Code block styling */
 .code-block {
   font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace;
-  font-size: 0.8rem;
-  line-height: 1.6;
+  font-size: 0.75rem;
+  line-height: 1.7;
+  tab-size: 2;
 }
 
-/* Glass effect */
-.glass {
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+/* Table styles */
+.schema-table th {
+  background: linear-gradient(135deg, #2A1450 0%, #3D1E6D 100%);
+  color: white;
+  font-weight: 600;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
+
+.schema-table td {
+  font-size: 0.75rem;
+  border-bottom: 1px solid rgba(232, 213, 188, 0.3);
+}
+
+.schema-table tr:hover td {
+  background-color: rgba(61, 30, 109, 0.03);
+}
+
+/* Route method badges */
+.method-get { background: #10b981; }
+.method-post { background: #3b82f6; }
+.method-delete { background: #ef4444; }
+.method-put { background: #f59e0b; }
