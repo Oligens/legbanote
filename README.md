@@ -322,6 +322,61 @@ npm run preview
 npm run lint
 ```
 
+---
+
+## 📱 PWA & Compilation Mobile
+
+Legba Note est une **Progressive Web App (PWA)** complète, installable sur mobile via **PWABuilder**.
+
+### Fonctionnalités PWA
+
+- ✅ **Installable** : Ajout à l'écran d'accueil
+- ✅ **Mode Standalone** : Interface native sans barre navigateur
+- ✅ **Mode Hors-ligne** : Service Worker avec cache intelligent
+- ✅ **Thème Cohérent** : Couleur #0a0f1d (Deep Petrol)
+- ✅ **Icônes** : Style Glassmorphism avec vèvè de Legba
+- ✅ **Permissions Audio** : Microphone configuré
+
+### Compilation Mobile
+
+#### Android (via PWABuilder)
+
+1. Déployer l'application sur HTTPS (Vercel/Netlify)
+2. Aller sur [PWABuilder](https://www.pwabuilder.com/)
+3. Entrer l'URL de votre application
+4. Package for stores → Android → Trusted Web Activity
+5. Télécharger le package et ouvrir dans Android Studio
+6. Générer l'APK/AAB et publier sur Google Play
+
+#### iOS (via Capacitor)
+
+```bash
+# Installer Capacitor
+npm install @capacitor/core @capacitor/cli
+
+# Initialiser
+npx cap init "Legba Note" "com.legba.note"
+
+# Ajouter iOS
+npx cap add ios
+
+# Build et sync
+npm run build
+npx cap sync ios
+
+# Ouvrir dans Xcode
+npx cap open ios
+```
+
+### Documentation Complète
+
+Voir **[PWABUILDER_GUIDE.md](./PWABUILDER_GUIDE.md)** pour :
+- Configuration détaillée
+- Guide de compilation Android/iOS
+- Permissions et assetlinks.json
+- Tests et dépannage
+- Publication sur les stores
+
 ### Technologies
 
 - **React 18** : UI framework

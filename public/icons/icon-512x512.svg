@@ -1,0 +1,60 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background Gradient -->
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0a0f1d;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#132F4C;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Glow Effect -->
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    
+    <!-- Glass Effect -->
+    <linearGradient id="glassGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:0.1" />
+      <stop offset="100%" style="stop-color:#ffffff;stop-opacity:0.05" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="512" height="512" fill="url(#bgGradient)" rx="80"/>
+  
+  <!-- Glass Overlay -->
+  <rect x="40" y="40" width="432" height="432" fill="url(#glassGradient)" rx="60" stroke="rgba(255,255,255,0.15)" stroke-width="2"/>
+  
+  <!-- Vèvè de Legba - Simplified -->
+  <g filter="url(#glow)" transform="translate(256, 256)">
+    <!-- Central Cross -->
+    <line x1="0" y1="-120" x2="0" y2="120" stroke="#00FFFF" stroke-width="8" stroke-linecap="round"/>
+    <line x1="-120" y1="0" x2="120" y2="0" stroke="#00FFFF" stroke-width="8" stroke-linecap="round"/>
+    
+    <!-- Diagonal Lines -->
+    <line x1="-85" y1="-85" x2="85" y2="85" stroke="#00FFFF" stroke-width="4" stroke-linecap="round" opacity="0.6"/>
+    <line x1="85" y1="-85" x2="-85" y2="85" stroke="#00FFFF" stroke-width="4" stroke-linecap="round" opacity="0.6"/>
+    
+    <!-- Circles at Endpoints -->
+    <circle cx="0" cy="-120" r="16" fill="#00FFFF"/>
+    <circle cx="0" cy="120" r="16" fill="#00FFFF"/>
+    <circle cx="-120" cy="0" r="16" fill="#00FFFF"/>
+    <circle cx="120" cy="0" r="16" fill="#00FFFF"/>
+    
+    <!-- Central Circle -->
+    <circle cx="0" cy="0" r="24" fill="none" stroke="#FFD700" stroke-width="4"/>
+    <circle cx="0" cy="0" r="12" fill="#FFD700"/>
+    
+    <!-- Decorative Dots -->
+    <circle cx="-85" cy="-85" r="8" fill="#00FFFF" opacity="0.8"/>
+    <circle cx="85" cy="-85" r="8" fill="#00FFFF" opacity="0.8"/>
+    <circle cx="-85" cy="85" r="8" fill="#00FFFF" opacity="0.8"/>
+    <circle cx="85" cy="85" r="8" fill="#00FFFF" opacity="0.8"/>
+  </g>
+  
+  <!-- Gold Border Accent -->
+  <rect x="40" y="40" width="432" height="432" fill="none" rx="60" stroke="#FFD700" stroke-width="1" opacity="0.3"/>
+</svg>
