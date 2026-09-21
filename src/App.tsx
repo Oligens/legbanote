@@ -1,64 +1,84 @@
 import { useState } from 'react';
-import LibraryScreen from './components/LibraryScreen';
-import ConversationScreen from './components/ConversationScreen';
-import HistoryScreen from './components/HistoryScreen';
-import ProfileScreen from './components/ProfileScreen';
-import BottomNav from './components/BottomNav';
+import ArchitectureView from './components/ArchitectureView';
+import PipelineView from './components/PipelineView';
+import ConstraintsView from './components/ConstraintsView';
+import CodeView from './components/CodeView';
+import LegbaIcon from './components/LegbaIcon';
 
-export type Screen = 'library' | 'conversation' | 'history' | 'profile';
+type Tab = 'architecture' | 'pipeline' | 'constraints' | 'code';
 
 export default function App() {
-  const [activeScreen, setActiveScreen] = useState<Screen>('library');
+  const [activeTab, setActiveTab] = useState<Tab>('architecture');
 
-  const renderScreen = () => {
-    switch (activeScreen) {
-      case 'library':
-        return <LibraryScreen onNavigate={setActiveScreen} />;
-      case 'conversation':
-        return <ConversationScreen />;
-      case 'history':
-        return <HistoryScreen />;
-      case 'profile':
-        return <ProfileScreen />;
-      default:
-        return <LibraryScreen onNavigate={setActiveScreen} />;
-    }
-  };
+  const tabs: { id: Tab; label: string; icon: string }[] = [
+    { id: 'architecture', label: 'Architecture', icon: '🏗️' },
+    { id: 'pipeline', label: 'Pipeline RAG', icon: '🔄' },
+    { id: 'constraints', label: 'Contraintes', icon: '⚡' },
+    { id: 'code', label: 'Implémentation', icon: '💻' },
+  ];
 
   return (
-    <div className="h-screen w-screen flex items-center justify-center bg-gray-900">
-      {/* Phone Frame */}
-      <div className="relative w-full max-w-[420px] h-full max-h-[900px] bg-sand-light overflow-hidden shadow-2xl rounded-none md:rounded-[2.5rem] md:border-8 md:border-gray-800">
-        {/* Status Bar */}
-        <div className="h-11 bg-sand-light flex items-center justify-between px-6 pt-2 text-xs font-medium text-gray-700">
-          <span>9:41</span>
-          <div className="flex items-center gap-1.5">
-            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 3C7.46 3 3.34 4.78.29 7.67l1.41 1.41C4.38 6.55 8.02 5 12 5s7.62 1.55 10.3 4.08l1.41-1.41C20.66 4.78 16.54 3 12 3z"/>
-              <path d="M12 7c-3.31 0-6.31 1.33-8.49 3.49l1.42 1.42C6.82 10.05 9.29 9 12 9s5.18 1.05 7.07 2.91l1.42-1.42C18.31 8.33 15.31 7 12 7z"/>
-              <path d="M12 11c-2.09 0-3.98.84-5.36 2.2l1.42 1.42C9.17 13.56 10.52 13 12 13s2.83.56 3.94 1.62l1.42-1.42C15.98 11.84 14.09 11 12 11z"/>
-              <circle cx="12" cy="17" r="2"/>
-            </svg>
-            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-              <rect x="2" y="6" width="3" height="12" rx="1"/>
-              <rect x="7" y="4" width="3" height="14" rx="1"/>
-              <rect x="12" y="2" width="3" height="16" rx="1"/>
-              <rect x="17" y="0" width="3" height="18" rx="1"/>
-            </svg>
-            <div className="w-6 h-3 border border-gray-600 rounded-sm relative ml-1">
-              <div className="absolute inset-0.5 bg-green-500 rounded-xs" style={{width: '70%'}}></div>
+    <div className="min-h-screen bg-sand-light">
+      {/* Header */}
+      <header className="bg-gradient-to-r from-indigo-dark via-indigo to-caribbean-dark text-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-sm flex items-center justify-center border border-white/20">
+              <LegbaIcon className="w-8 h-8" color="white" />
+            </div>
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold">Legba Note</h1>
+              <p className="text-sm text-white/70">Architecture Technique & Logique Métier</p>
             </div>
           </div>
+          <p className="text-white/80 max-w-2xl text-sm sm:text-base leading-relaxed">
+            Application hybride locale + API spécialisée dans la réponse à des questions d'examen 
+            à partir des documents privés de l'utilisateur. Pipeline RAG optimisé pour appareils 
+            à ressources limitées (8 Go RAM).
+          </p>
         </div>
+      </header>
 
-        {/* Screen Content */}
-        <div className="h-[calc(100%-44px-72px)] overflow-hidden">
-          {renderScreen()}
+      {/* Navigation Tabs */}
+      <nav className="bg-white border-b border-sand-dark/20 sticky top-0 z-50 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center gap-1 overflow-x-auto py-2">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all duration-300 ${
+                  activeTab === tab.id
+                    ? 'bg-indigo text-white shadow-md shadow-indigo/20'
+                    : 'text-gray-500 hover:text-indigo hover:bg-indigo/5'
+                }`}
+              >
+                <span>{tab.icon}</span>
+                {tab.label}
+              </button>
+            ))}
+          </div>
         </div>
+      </nav>
 
-        {/* Bottom Navigation */}
-        <BottomNav activeScreen={activeScreen} onNavigate={setActiveScreen} />
-      </div>
+      {/* Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {activeTab === 'architecture' && <ArchitectureView />}
+        {activeTab === 'pipeline' && <PipelineView />}
+        {activeTab === 'constraints' && <ConstraintsView />}
+        {activeTab === 'code' && <CodeView />}
+      </main>
+
+      {/* Footer */}
+      <footer className="bg-indigo-dark text-white/60 py-6 mt-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <LegbaIcon className="w-5 h-5" color="rgba(255,255,255,0.6)" />
+            <span className="text-sm font-medium text-white/80">Legba Note</span>
+          </div>
+          <p className="text-xs">Gardien de votre savoir — Architecture documentée pour développement</p>
+        </div>
+      </footer>
     </div>
   );
 }
