@@ -4,6 +4,35 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Legba Note — Conversation Vocale Continue & Mains Libres</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="description" content="Assistant d'examen vocal et intelligent basé sur vos cours personnels" />
+    <meta name="theme-color" content="#0a0f1d" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Legba Note" />
+    <meta name="application-name" content="Legba Note" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="msapplication-TileColor" content="#0a0f1d" />
+    <meta name="msapplication-tap-highlight" content="no" />
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json" />
+    
+    <!-- Apple Touch Icons -->
+    <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+    <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-192x192.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-192x192.png" />
+    <link rel="apple-touch-icon" sizes="167x167" href="/icons/icon-192x192.png" />
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-192x192.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-192x192.png" />
+    <link rel="shortcut icon" href="/icons/icon-192x192.png" />
+    
+    <!-- Permissions Audio -->
+    <meta name="permissions" content="microphone, camera" />
+    
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
@@ -93,5 +122,64 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
+    
+    <!-- Service Worker Registration -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then((registration) => {
+              console.log('[PWA] Service Worker enregistré avec succès:', registration.scope);
+              
+              // Vérifier les mises à jour
+              registration.addEventListener('updatefound', () => {
+                const newWorker = registration.installing;
+                console.log('[PWA] Nouvelle version du Service Worker détectée');
+                
+                newWorker.addEventListener('statechange', () => {
+                  if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                    // Nouvelle version disponible
+                    if (confirm('Une nouvelle version de Legba Note est disponible. Voulez-vous mettre à jour ?')) {
+                      newWorker.postMessage({ type: 'SKIP_WAITING' });
+                      window.location.reload();
+                    }
+                  }
+                });
+              });
+            })
+            .catch((error) => {
+              console.error('[PWA] Erreur lors de l\'enregistrement du Service Worker:', error);
+            });
+        });
+        
+        // Gestion de la connexion
+        window.addEventListener('online', () => {
+          console.log('[PWA] Connexion rétablie');
+          document.body.classList.remove('offline');
+        });
+        
+        window.addEventListener('offline', () => {
+          console.log('[PWA] Connexion perdue');
+          document.body.classList.add('offline');
+        });
+      }
+      
+      // Demander les permissions audio au chargement
+      async function requestAudioPermissions() {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          console.log('[PWA] Permission microphone accordée');
+          stream.getTracks().forEach(track => track.stop());
+        } catch (error) {
+          console.warn('[PWA] Permission microphone refusée:', error.message);
+        }
+      }
+      
+      // Demander les permissions après interaction utilisateur
+      document.addEventListener('click', function requestOnce() {
+        requestAudioPermissions();
+        document.removeEventListener('click', requestOnce);
+      }, { once: true });
+    </script>
   </body>
 </html>
