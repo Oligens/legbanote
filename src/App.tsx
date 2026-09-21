@@ -5,9 +5,10 @@ import DatabaseSchema from './components/DatabaseSchema';
 import DocumentStorage from './components/DocumentStorage';
 import ApiRoutes from './components/ApiRoutes';
 import SecurityView from './components/SecurityView';
+import VoiceDictationView from './components/VoiceDictationView';
 import LegbaIcon from './components/LegbaIcon';
 
-type Section = 'overview' | 'auth' | 'database' | 'storage' | 'routes' | 'security';
+type Section = 'overview' | 'auth' | 'database' | 'storage' | 'routes' | 'security' | 'voice';
 
 export default function App() {
   const [activeSection, setActiveSection] = useState<Section>('overview');
@@ -19,6 +20,7 @@ export default function App() {
     { id: 'storage', label: 'Stockage Documents', icon: '📁', shortLabel: 'Storage' },
     { id: 'routes', label: 'Routes API', icon: '🔀', shortLabel: 'Routes' },
     { id: 'security', label: 'Sécurité & RAM', icon: '🛡️', shortLabel: 'Security' },
+    { id: 'voice', label: 'Dictée Vocale', icon: '🎙️', shortLabel: 'Voice' },
   ];
 
   const renderSection = () => {
@@ -29,6 +31,7 @@ export default function App() {
       case 'storage': return <DocumentStorage />;
       case 'routes': return <ApiRoutes />;
       case 'security': return <SecurityView />;
+      case 'voice': return <VoiceDictationView />;
       default: return <BackendOverview />;
     }
   };
