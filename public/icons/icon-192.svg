@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#142644"/>
+      <stop offset="100%" stop-color="#0a0f1d"/>
+    </linearGradient>
+    <linearGradient id="cyan" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#78e6ff"/>
+      <stop offset="100%" stop-color="#6bbcff"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ffe88a"/>
+      <stop offset="100%" stop-color="#d4a92f"/>
+    </linearGradient>
+  </defs>
+  <rect width="192" height="192" rx="38.400000000000006" fill="#0a0f1d"/>
+  <rect x="15.36" y="15.36" width="161.28" height="161.28" rx="38.400000000000006" fill="url(#bg)" stroke="#78e6ff" stroke-opacity=".65" stroke-width="2.3040000000000003"/>
+  <rect x="28.799999999999997" y="28.799999999999997" width="134.39999999999998" height="134.39999999999998" rx="30.72" fill="#0a0f1d" fill-opacity=".45" stroke="#ffe88a" stroke-opacity=".32" stroke-width="1.1520000000000001"/>
+  <path d="M 55.67999999999999 86.4 A 40.32 40.32 0 1 1 136.32 86.4" fill="none" stroke="url(#gold)" stroke-width="10.56" stroke-linecap="round"/>
+  <path d="M 96 65.28 V 144 H 130.56" fill="none" stroke="url(#cyan)" stroke-width="10.56" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="96" cy="85.44" r="9.024000000000001" fill="#ffe88a"/>
+</svg>
