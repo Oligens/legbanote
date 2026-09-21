@@ -1,14 +1,18 @@
 import { useState, useEffect } from 'react';
 import LiveOrb, { OrbState } from './LiveOrb';
 import LegbaIcon from './LegbaIcon';
+import WebEnvironmentWarning from './WebEnvironmentWarning';
+import { useEnvironment, isWebEnvironment } from '../hooks/useEnvironment';
 
 export default function LegbaLiveScreen() {
+  const env = useEnvironment();
   const [orbState, setOrbState] = useState<OrbState>('idle');
   const [currentTranscript, setCurrentTranscript] = useState('');
   const [currentResponse, setCurrentResponse] = useState('');
   const [sources, setSources] = useState<string[]>([]);
   const [history, setHistory] = useState<Array<{ question: string; answer: string; sources: string[] }>>([]);
   const [isBluetoothConnected, setIsBluetoothConnected] = useState(true);
+  const [showWebWarning, setShowWebWarning] = useState(true);
 
   // Simulate continuous listening and conversation flow
   useEffect(() => {
@@ -126,7 +130,7 @@ export default function LegbaLiveScreen() {
             </span>
           </div>
           
-          {isBluetoothConnected && (
+          {isBluetoothConnected && !isWebEnvironment(env) && (
             <div className="flex items-center gap-1.5">
               <svg className="w-3.5 h-3.5 text-cyan-neon" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M17.71 7.71L12 2h-1v7.59L6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 11 14.41V22h1l5.71-5.71-4.3-4.29 4.3-4.29zM13 5.83l1.88 1.88L13 9.59V5.83zm1.88 10.46L13 18.17v-3.76l1.88 1.88z"/>
@@ -136,6 +140,13 @@ export default function LegbaLiveScreen() {
           )}
         </div>
       </div>
+
+      {/* Web Environment Warning */}
+      {isWebEnvironment(env) && showWebWarning && (
+        <div className="relative z-10 px-4 pb-2">
+          <WebEnvironmentWarning onDismiss={() => setShowWebWarning(false)} />
+        </div>
+      )}
 
       {/* Main orb area */}
       <div className="flex-1 flex flex-col items-center justify-center relative z-10 px-4">

@@ -49,6 +49,15 @@ npm run dev
 
 L'application sera accessible sur `http://localhost:5173`
 
+### ⚠️ Note Importante
+
+**En version web** : L'application affiche une interface complète mais certaines fonctionnalités sont simulées :
+- Importation de fichiers (simulée avec logs)
+- Mode vocal continu (avertissement affiché)
+- Routage Bluetooth (non disponible)
+
+**Pour la version mobile native** : Le code Flutter complet est disponible dans `FILE_IMPORT_FLUTTER_CODE.md`
+
 ---
 
 ## 📱 Navigation de l'Application
