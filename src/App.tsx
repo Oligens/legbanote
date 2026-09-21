@@ -5,9 +5,10 @@ import LegbaLiveScreen from './components/LegbaLiveScreen';
 import VoiceSettingsScreen from './components/VoiceSettingsScreen';
 import AudioPipelineDemo from './components/AudioPipelineDemo';
 import UniversalImportDemo from './components/UniversalImportDemo';
+import AudioDeviceDetection from './components/AudioDeviceDetection';
 import LegbaIcon from './components/LegbaIcon';
 
-export type Screen = 'auth' | 'library' | 'live' | 'voice' | 'audio-fix' | 'import-fix';
+export type Screen = 'auth' | 'library' | 'live' | 'voice' | 'audio-fix' | 'import-fix' | 'device-detect';
 
 export default function App() {
   const [activeScreen, setActiveScreen] = useState<Screen>('auth');
@@ -65,6 +66,15 @@ export default function App() {
         </svg>
       ),
     },
+    {
+      id: 'device-detect',
+      label: 'Device',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+        </svg>
+      ),
+    },
   ];
 
   if (!isAuthenticated) {
@@ -96,6 +106,7 @@ export default function App() {
                 {activeScreen === 'voice' && 'Configuration vocale'}
                 {activeScreen === 'audio-fix' && 'Correction Pipeline Audio'}
                 {activeScreen === 'import-fix' && 'Importation Universelle'}
+                {activeScreen === 'device-detect' && 'Détection Périphérique'}
               </p>
             </div>
           </div>
@@ -116,6 +127,7 @@ export default function App() {
           {activeScreen === 'voice' && <VoiceSettingsScreen />}
           {activeScreen === 'audio-fix' && <AudioPipelineDemo />}
           {activeScreen === 'import-fix' && <UniversalImportDemo />}
+          {activeScreen === 'device-detect' && <AudioDeviceDetection />}
         </div>
 
         {/* Bottom Navigation */}

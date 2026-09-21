@@ -90,28 +90,40 @@ L'application sera accessible sur `http://localhost:5173`
 
 ---
 
-## 🔧 Corrections Critiques (v2.0)
+## 🔧 Corrections Critiques (v2.1)
 
-### 🐛 Bug #1 : Audio Non Fonctionnel
+### 🐛 Bug #1 : Conflits de Routage Audio (RÉSOLU)
 
-**Problème** : L'IA ne répondait pas vocalement dans le casque Bluetooth
+**Problème** : Le son ne sortait pas dans le casque Bluetooth/filaire, restant bloqué sur le haut-parleur interne ou un périphérique fantôme.
+
+**Causes racines** :
+- Faux positif Bluetooth (cache système d'anciennes connexions)
+- Conflit entre profils filaire/sans-fil
+- Flags de session audio basculant par défaut vers le haut-parleur
 
 **Solution** :
 ```dart
-// Configuration AudioSession corrigée
+// Configuration avec détection automatique
 await _audioSession.configure(const AudioSessionConfiguration(
   avAudioSessionCategory: AVAudioSessionCategory.playAndRecord,
   avAudioSessionCategoryOptions: 
       AVAudioSessionCategoryOptions.allowBluetooth |
-      AVAudioSessionCategoryOptions.allowBluetoothA2DP,
-  avAudioSessionMode: AVAudioSessionMode.spokenAudio,
+      AVAudioSessionCategoryOptions.allowBluetoothA2DP |
+      AVAudioSessionCategoryOptions.defaultToSpeaker,
+  androidAudioMode: AndroidAudioMode.inCommunication,
+  androidAutomaticHeadsetDetection: true, // 🎯 CRITIQUE
 ));
 
-// Forçage du routage Bluetooth
-await _forceBluetoothRouting();
+// Détection dynamique du périphérique actif
+await _updateActiveDevice();
+
+// Forçage du routage avant chaque lecture TTS
+await _forceRoutingToActiveDevice();
 ```
 
-**Tester** : Navigation → "Audio Fix" → "Lancer le Pipeline Complet"
+**Tester** : Navigation → "Device" → Cliquez sur Bluetooth/Filaire/Speaker
+
+**Documentation complète** : [AUDIO_ROUTING_FIX.md](./AUDIO_ROUTING_FIX.md)
 
 ### 📦 Bug #2 : Importation Limitée
 
