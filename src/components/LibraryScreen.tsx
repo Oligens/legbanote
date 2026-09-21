@@ -1,4 +1,4 @@
-import { Screen } from '../App';
+import type { Screen } from '../App';
 
 interface LibraryScreenProps {
   onNavigate: (screen: Screen) => void;
@@ -14,18 +14,26 @@ const courses = [
 export default function LibraryScreen({ onNavigate }: LibraryScreenProps) {
   return (
     <div className="h-full overflow-y-auto px-4 pb-4">
-      {/* Search Bar */}
+      {/* Live Conversation Access */}
       <button
-        onClick={() => onNavigate('chat')}
+        onClick={() => onNavigate('live')}
         className="w-full glass-card glass-card-hover rounded-2xl px-4 py-3.5 flex items-center gap-3 mb-5 transition-all"
       >
-        <svg className="w-5 h-5 text-cyan-neon" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-        </svg>
-        <span className="text-sm text-text-muted italic flex-1 text-left">Interroger ma connaissance...</span>
+        <div className="relative">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-neon/30 to-metallic-gold/30 flex items-center justify-center">
+            <svg className="w-4 h-4 text-cyan-neon" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.91-3c-.49 0-.9.36-.98.85C16.52 14.2 14.47 16 12 16s-4.52-1.8-4.93-4.15c-.08-.49-.49-.85-.98-.85-.61 0-1.09.54-1 1.14.49 3 2.89 5.35 5.91 5.78V20c0 .55.45 1 1 1s1-.45 1-1v-2.08c3.02-.43 5.42-2.78 5.91-5.78.1-.6-.39-1.14-1-1.14z"/>
+            </svg>
+          </div>
+          <div className="absolute inset-0 w-8 h-8 rounded-full bg-gradient-to-br from-cyan-neon/20 to-metallic-gold/20 animate-ping opacity-20" />
+        </div>
+        <div className="flex-1 text-left">
+          <p className="text-sm text-white font-medium">Legba Live</p>
+          <p className="text-[10px] text-text-muted">Conversation vocale continue</p>
+        </div>
         <div className="flex items-center gap-1.5 bg-cyan-neon/10 px-2.5 py-1 rounded-full border border-cyan-neon/20">
           <div className="w-1.5 h-1.5 rounded-full bg-cyan-neon animate-pulse"></div>
-          <span className="text-[10px] font-medium text-cyan-neon">IA</span>
+          <span className="text-[10px] font-medium text-cyan-neon">Actif</span>
         </div>
       </button>
 

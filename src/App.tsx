@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import AuthScreen from './components/AuthScreen';
 import LibraryScreen from './components/LibraryScreen';
-import ChatScreen from './components/ChatScreen';
+import LegbaLiveScreen from './components/LegbaLiveScreen';
 import VoiceSettingsScreen from './components/VoiceSettingsScreen';
 import LegbaIcon from './components/LegbaIcon';
 
-export type Screen = 'auth' | 'library' | 'chat' | 'voice';
+export type Screen = 'auth' | 'library' | 'live' | 'voice';
 
 export default function App() {
   const [activeScreen, setActiveScreen] = useState<Screen>('auth');
@@ -13,13 +13,13 @@ export default function App() {
 
   const handleLogin = () => {
     setIsAuthenticated(true);
-    setActiveScreen('library');
+    setActiveScreen('live');
   };
 
   const navItems: { id: Screen; label: string; icon: JSX.Element }[] = [
     {
       id: 'library',
-      label: 'Bibliothèque',
+      label: 'Cours',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
@@ -27,12 +27,13 @@ export default function App() {
       ),
     },
     {
-      id: 'chat',
-      label: 'Legba IA',
+      id: 'live',
+      label: 'Legba Live',
       icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-        </svg>
+        <div className="relative">
+          <div className="w-5 h-5 rounded-full bg-gradient-to-br from-cyan-neon to-metallic-gold animate-pulse" />
+          <div className="absolute inset-0 w-5 h-5 rounded-full bg-gradient-to-br from-cyan-neon to-metallic-gold animate-ping opacity-20" />
+        </div>
       ),
     },
     {
@@ -70,8 +71,8 @@ export default function App() {
             <div>
               <h1 className="text-sm font-bold text-white">Legba Note</h1>
               <p className="text-[10px] text-text-muted">
-                {activeScreen === 'library' && 'Bibliothèque de cours'}
-                {activeScreen === 'chat' && 'Assistant IA RAG'}
+                {activeScreen === 'library' && 'Gestion des cours'}
+                {activeScreen === 'live' && 'Conversation continue'}
                 {activeScreen === 'voice' && 'Configuration vocale'}
               </p>
             </div>
@@ -89,7 +90,7 @@ export default function App() {
         {/* Screen Content */}
         <div className="flex-1 overflow-hidden">
           {activeScreen === 'library' && <LibraryScreen onNavigate={setActiveScreen} />}
-          {activeScreen === 'chat' && <ChatScreen />}
+          {activeScreen === 'live' && <LegbaLiveScreen />}
           {activeScreen === 'voice' && <VoiceSettingsScreen />}
         </div>
 
