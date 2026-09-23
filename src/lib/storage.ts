@@ -3,6 +3,10 @@ export type StoredDocument = {
   name: string;
   text: string;
   createdAt: string;
+  size?: number;
+  mimeType?: string;
+  extractionStatus?: 'extracted' | 'stored-raw' | 'failed';
+  extractionMessage?: string;
 };
 
 export type StoredCourse = {
