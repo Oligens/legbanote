@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import AuthScreen from './components/AuthScreen';
 import LibraryScreen from './components/LibraryScreen';
 import LegbaLiveScreen from './components/LegbaLiveScreen';
 import VoiceSettingsScreen from './components/VoiceSettingsScreen';
 import LegbaIcon from './components/LegbaIcon';
-import { clearSession, loadCourses, loadSession, saveCourses, saveSession, type StoredCourse } from './lib/storage';
+import { clearSession, loadCourses, loadSession, saveSession, type StoredCourse } from './lib/storage';
 
 export type Screen = 'auth' | 'library' | 'live' | 'voice';
 
@@ -12,10 +12,6 @@ export default function App() {
   const [activeScreen, setActiveScreen] = useState<Screen>('auth');
   const [isAuthenticated, setIsAuthenticated] = useState(() => Boolean(loadSession()));
   const [courses, setCourses] = useState<StoredCourse[]>(() => loadCourses());
-
-  useEffect(() => {
-    saveCourses(courses);
-  }, [courses]);
 
   const handleLogin = (username: string) => {
     setIsAuthenticated(true);
