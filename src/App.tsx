@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import AuthScreen from './components/AuthScreen';
 import LibraryScreen from './components/LibraryScreen';
 import LegbaLiveScreen from './components/LegbaLiveScreen';
@@ -7,15 +7,22 @@ import AudioPipelineDemo from './components/AudioPipelineDemo';
 import UniversalImportDemo from './components/UniversalImportDemo';
 import AudioDeviceDetection from './components/AudioDeviceDetection';
 import LegbaIcon from './components/LegbaIcon';
+import { clearSession, loadCourses, loadSession, saveCourses, saveSession, type StoredCourse } from './lib/storage';
 
 export type Screen = 'auth' | 'library' | 'live' | 'voice' | 'audio-fix' | 'import-fix' | 'device-detect';
 
 export default function App() {
   const [activeScreen, setActiveScreen] = useState<Screen>('auth');
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(() => Boolean(loadSession()));
+  const [courses, setCourses] = useState<StoredCourse[]>(() => loadCourses());
 
-  const handleLogin = () => {
+  useEffect(() => {
+    saveCourses(courses);
+  }, [courses]);
+
+  const handleLogin = (username: string) => {
     setIsAuthenticated(true);
+    saveSession(username);
     setActiveScreen('live');
   };
 
@@ -111,7 +118,7 @@ export default function App() {
             </div>
           </div>
           <button
-            onClick={() => { setIsAuthenticated(false); setActiveScreen('auth'); }}
+            onClick={() => { clearSession(); setIsAuthenticated(false); setActiveScreen('auth'); }}
             className="w-9 h-9 rounded-xl glass-card flex items-center justify-center hover:bg-glass-white-hover transition-colors"
           >
             <svg className="w-4 h-4 text-text-secondary" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
@@ -122,7 +129,7 @@ export default function App() {
 
         {/* Screen Content */}
         <div className="flex-1 overflow-hidden">
-          {activeScreen === 'library' && <LibraryScreen onNavigate={setActiveScreen} />}
+          {activeScreen === 'library' && <LibraryScreen onNavigate={setActiveScreen} courses={courses} setCourses={setCourses} />}
           {activeScreen === 'live' && <LegbaLiveScreen />}
           {activeScreen === 'voice' && <VoiceSettingsScreen />}
           {activeScreen === 'audio-fix' && <AudioPipelineDemo />}
