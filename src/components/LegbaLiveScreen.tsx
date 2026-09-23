@@ -1,19 +1,16 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import LiveOrb, { OrbState } from './LiveOrb';
 import LegbaIcon from './LegbaIcon';
 import WebEnvironmentWarning from './WebEnvironmentWarning';
 import { useEnvironment, isWebEnvironment } from '../hooks/useEnvironment';
-
-type HistoryItem = {
-  question: string;
-  answer: string;
-  sources: string[];
-};
+import { loadHistory, saveHistory, type StoredCourse, type StoredHistoryItem } from '../lib/storage';
+import { retrieveRelevantChunks, type RagChunk } from '../lib/rag';
 
 type SpeechRecognitionLike = {
   continuous: boolean;
   interimResults: boolean;
   lang: string;
+  maxAlternatives: number;
   start: () => void;
   stop: () => void;
   abort: () => void;
@@ -22,11 +19,7 @@ type SpeechRecognitionLike = {
   onerror: ((event: { error?: string }) => void) | null;
   onresult: ((event: {
     resultIndex: number;
-    results: ArrayLike<{
-      isFinal: boolean;
-      0: { transcript: string };
-      length: number;
-    }>;
+    results: ArrayLike<{ isFinal: boolean; 0: { transcript: string }; length: number }>;
   }) => void) | null;
 };
 
@@ -37,175 +30,222 @@ declare global {
   }
 }
 
-export default function LegbaLiveScreen() {
+interface LegbaLiveScreenProps {
+  courses: StoredCourse[];
+}
+
+const SILENCE_MS = 900;
+
+export default function LegbaLiveScreen({ courses }: LegbaLiveScreenProps) {
   const env = useEnvironment();
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
-  const transcriptRef = useRef('');
+  const streamRef = useRef<MediaStream | null>(null);
+  const finalTranscriptRef = useRef('');
+  const interimTranscriptRef = useRef('');
+  const silenceTimerRef = useRef<number | null>(null);
+  const activeRef = useRef(true);
+  const processingRef = useRef(false);
+  const ttsRef = useRef<SpeechSynthesisUtterance | null>(null);
 
-  // IMPORTANT: the Live screen is deliberately passive on mount.
   const [orbState, setOrbState] = useState<OrbState>('idle');
   const [currentTranscript, setCurrentTranscript] = useState('');
   const [currentResponse, setCurrentResponse] = useState('');
   const [sources, setSources] = useState<string[]>([]);
-  const [history, setHistory] = useState<HistoryItem[]>([]);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [isListening, setIsListening] = useState(false);
+  const [history, setHistory] = useState<StoredHistoryItem[]>(() => loadHistory());
   const [voiceError, setVoiceError] = useState('');
-  const [isBluetoothConnected] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [textInput, setTextInput] = useState('');
   const [showWebWarning, setShowWebWarning] = useState(true);
 
+  useEffect(() => saveHistory(history), [history]);
+
+  const speak = useCallback((text: string) => {
+    if (!('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'fr-FR';
+    utterance.rate = 0.96;
+    utterance.pitch = 1;
+    utterance.volume = 1;
+    ttsRef.current = utterance;
+    window.speechSynthesis.speak(utterance);
+  }, []);
+
   const stopListening = useCallback(() => {
+    if (silenceTimerRef.current) window.clearTimeout(silenceTimerRef.current);
+    silenceTimerRef.current = null;
     recognitionRef.current?.stop();
     recognitionRef.current = null;
     setIsListening(false);
-    setOrbState('idle');
   }, []);
 
-  const startListening = useCallback(() => {
-    // No microphone access, simulation, API call, or question generation occurs
-    // until this handler is explicitly invoked by the user.
-    const Recognition =
-      window.SpeechRecognition || window.webkitSpeechRecognition;
+  const processQuestion = useCallback(async (questionOverride?: string) => {
+    const question = (questionOverride ?? finalTranscriptRef.current).trim();
+    if (!question || processingRef.current) return;
 
+    processingRef.current = true;
+    stopListening();
+    setOrbState('processing');
+    setVoiceError('');
+    setCurrentResponse('');
+
+    try {
+      const context: RagChunk[] = retrieveRelevantChunks(courses, question, 6);
+      const response = await fetch('/api/gemini', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question, context }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data?.error || 'Gemini n’a pas pu répondre.');
+
+      const answer = String(data.answer || '').trim();
+      if (!answer) throw new Error('Gemini a retourné une réponse vide.');
+
+      setCurrentResponse(answer);
+      setSources(Array.isArray(data.sources) ? data.sources : []);
+      setHistory((items) => [
+        ...items,
+        {
+          id: crypto.randomUUID(),
+          question,
+          answer,
+          sources: Array.isArray(data.sources) ? data.sources : [],
+          createdAt: new Date().toISOString(),
+        },
+      ]);
+      speak(answer);
+    } catch (error) {
+      setVoiceError(error instanceof Error ? error.message : 'Erreur pendant la réponse Gemini.');
+    } finally {
+      finalTranscriptRef.current = '';
+      interimTranscriptRef.current = '';
+      setTextInput('');
+      processingRef.current = false;
+      setOrbState('idle');
+
+      if (activeRef.current && !('speechSynthesis' in window && window.speechSynthesis.speaking)) {
+        window.setTimeout(() => {
+          if (activeRef.current) startRecognition();
+        }, 250);
+      }
+    }
+  }, [courses, speak, stopListening]);
+
+  const scheduleSilenceProcessing = useCallback(() => {
+    if (silenceTimerRef.current) window.clearTimeout(silenceTimerRef.current);
+    silenceTimerRef.current = window.setTimeout(() => {
+      silenceTimerRef.current = null;
+      if (finalTranscriptRef.current.trim() && !processingRef.current) {
+        void processQuestion();
+      }
+    }, SILENCE_MS);
+  }, [processQuestion]);
+
+  const startRecognition = useCallback(async () => {
+    if (!activeRef.current || processingRef.current || recognitionRef.current) return;
+
+    const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!Recognition) {
-      setVoiceError(
-        "La reconnaissance vocale n'est pas disponible dans ce navigateur."
-      );
+      setVoiceError('La reconnaissance vocale Web Speech API n’est pas disponible dans ce navigateur.');
       return;
     }
 
-    setVoiceError('');
-    setCurrentTranscript('');
-    transcriptRef.current = '';
-    setCurrentResponse('');
-    setSources([]);
-    setOrbState('listening');
-
-    const recognition = new Recognition();
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.lang = 'fr-FR';
-
-    recognition.onstart = () => {
-      setIsListening(true);
-      setOrbState('listening');
-    };
-
-    recognition.onresult = (event) => {
-      let finalTranscript = transcriptRef.current;
-      let interimTranscript = '';
-
-      for (let i = event.resultIndex; i < event.results.length; i += 1) {
-        const result = event.results[i];
-        if (result.isFinal) {
-          finalTranscript += `${result[0].transcript} `;
-        } else {
-          interimTranscript += result[0].transcript;
-        }
-      }
-
-      transcriptRef.current = finalTranscript.trim();
-      const visibleTranscript = `${transcriptRef.current} ${interimTranscript}`.trim();
-      if (visibleTranscript) {
-        setCurrentTranscript(visibleTranscript);
-      }
-
-      // Speech recognition only transcribes. No question is generated here.
-      // Processing happens only after the user explicitly presses the action
-      // button below, which prevents any automatic conversation on startup.
-    };
-
-    recognition.onerror = (event) => {
-      setVoiceError(
-        event.error
-          ? `Microphone / reconnaissance vocale : ${event.error}`
-          : 'Impossible de démarrer la reconnaissance vocale.'
-      );
-      setIsListening(false);
-      setOrbState('idle');
-    };
-
-    recognition.onend = () => {
-      recognitionRef.current = null;
-      setIsListening(false);
-      setOrbState('idle');
-    };
-
-    recognitionRef.current = recognition;
-
     try {
+      if (!streamRef.current) {
+        streamRef.current = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+            channelCount: 1,
+          },
+        });
+      }
+
+      const recognition = new Recognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.maxAlternatives = 3;
+      recognition.lang = 'fr-FR';
+
+      recognition.onstart = () => {
+        setIsListening(true);
+        setOrbState('listening');
+      };
+
+      recognition.onresult = (event) => {
+        let finalText = finalTranscriptRef.current;
+        let interimText = '';
+
+        for (let i = event.resultIndex; i < event.results.length; i += 1) {
+          const result = event.results[i];
+          if (result.isFinal) finalText += result[0].transcript + ' ';
+          else interimText += result[0].transcript;
+        }
+
+        finalTranscriptRef.current = finalText.trim();
+        interimTranscriptRef.current = interimText.trim();
+
+        const visible = [finalTranscriptRef.current, interimTranscriptRef.current].filter(Boolean).join(' ');
+        if (visible) {
+          setCurrentTranscript(visible);
+          scheduleSilenceProcessing();
+        }
+      };
+
+      recognition.onerror = (event) => {
+        if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+          setVoiceError('Accès microphone refusé. Autorisez le microphone pour utiliser le mode mains libres.');
+        } else if (event.error !== 'aborted') {
+          setVoiceError(`Reconnaissance vocale : ${event.error || 'erreur inconnue'}`);
+        }
+        setIsListening(false);
+      };
+
+      recognition.onend = () => {
+        recognitionRef.current = null;
+        setIsListening(false);
+        if (activeRef.current && !processingRef.current && finalTranscriptRef.current.trim()) {
+          void processQuestion();
+        } else if (activeRef.current && !processingRef.current) {
+          window.setTimeout(() => {
+            if (activeRef.current) startRecognition();
+          }, 150);
+        }
+      };
+
+      recognitionRef.current = recognition;
       recognition.start();
-    } catch {
-      recognitionRef.current = null;
+    } catch (error) {
+      setVoiceError(error instanceof Error ? error.message : 'Impossible d’activer le microphone.');
       setIsListening(false);
-      setOrbState('idle');
-      setVoiceError("Impossible d'activer le microphone.");
     }
-  }, []);
+  }, [processQuestion, scheduleSilenceProcessing]);
 
-  const processQuestion = useCallback(() => {
-    const question = transcriptRef.current.trim();
-    if (!question || isListening || isProcessing) return;
+  useEffect(() => {
+    activeRef.current = true;
+    void startRecognition();
 
-    setIsProcessing(true);
-    setOrbState('processing');
-    setCurrentResponse('');
-    setSources([]);
+    return () => {
+      activeRef.current = false;
+      if (silenceTimerRef.current) window.clearTimeout(silenceTimerRef.current);
+      recognitionRef.current?.abort();
+      recognitionRef.current = null;
+      streamRef.current?.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+      window.speechSynthesis?.cancel();
+    };
+  }, [startRecognition]);
 
-    // There is currently no remote AI endpoint in this repository. Do not
-    // fabricate an answer: persist the real spoken question and expose the
-    // explicit hand-off state instead.
-    const response =
-      'Question enregistrée. Aucun moteur de réponse distant n’est connecté à Legba Live pour le moment.';
-
-    setCurrentResponse(response);
-    setHistory((items) => [
-      ...items,
-      { question, answer: response, sources: [] },
-    ]);
-    setOrbState('idle');
-    setIsProcessing(false);
-  }, [isListening, isProcessing]);
-
-  const clearCurrentConversation = () => {
-    stopListening();
-    setCurrentTranscript('');
-    transcriptRef.current = '';
-    setCurrentResponse('');
-    setSources([]);
-    setVoiceError('');
-    setIsProcessing(false);
-    setOrbState('idle');
-  };
-
-  const getStatusText = () => {
-    switch (orbState) {
-      case 'listening':
-        return 'Écoute active';
-      case 'processing':
-        return 'Recherche dans vos cours...';
-      case 'speaking':
-        return 'Réponse vocale';
-      case 'dictation':
-        return 'Mode dictée lente';
-      default:
-        return 'Veille — en attente de votre voix';
-    }
-  };
-
-  const getStatusColor = () => {
-    switch (orbState) {
-      case 'listening':
-        return 'text-cyan-neon';
-      case 'processing':
-      case 'dictation':
-        return 'text-metallic-gold';
-      case 'speaking':
-        return 'text-emerald-400';
-      default:
-        return 'text-white/60';
-    }
-  };
+  useEffect(() => {
+    if (!textInput.trim()) return;
+    const timer = window.setTimeout(() => {
+      if (!processingRef.current) void processQuestion(textInput.trim());
+    }, SILENCE_MS);
+    return () => window.clearTimeout(timer);
+  }, [textInput, processQuestion]);
 
   return (
     <div className="h-full flex flex-col relative overflow-hidden">
@@ -216,28 +256,10 @@ export default function LegbaLiveScreen() {
 
       <div className="relative z-10 px-4 pt-2 pb-4">
         <div className="glass-card rounded-2xl px-4 py-3 flex items-center justify-between border border-white/10">
-          <div className="flex items-center gap-3">
-            <div
-              className={`w-2 h-2 rounded-full ${
-                orbState === 'idle'
-                  ? 'bg-white/40'
-                  : orbState === 'listening'
-                    ? 'bg-cyan-neon animate-pulse'
-                    : orbState === 'processing'
-                      ? 'bg-metallic-gold animate-pulse'
-                      : orbState === 'speaking'
-                        ? 'bg-emerald-400 animate-pulse'
-                        : 'bg-metallic-gold animate-pulse'
-              }`}
-            />
-            <span className={`text-xs font-medium ${getStatusColor()}`}>
-              {getStatusText()}
-            </span>
-          </div>
-
-          {isBluetoothConnected && !isWebEnvironment(env) && (
-            <span className="text-[10px] text-cyan-neon">Casque connecté</span>
-          )}
+          <span className="text-xs font-medium text-cyan-neon">
+            {orbState === 'processing' ? 'Gemini + RAG en traitement…' : isListening ? 'Écoute mains libres' : 'Veille vocale'}
+          </span>
+          <span className="text-[10px] text-white/40">{courses.reduce((sum, c) => sum + c.documents.length, 0)} documents locaux</span>
         </div>
       </div>
 
@@ -247,144 +269,54 @@ export default function LegbaLiveScreen() {
         </div>
       )}
 
-      <div className="flex-1 flex flex-col items-center justify-center relative z-10 px-4">
-        <div className="mb-8">
-          <LiveOrb state={orbState} size={220} />
-        </div>
+      <div className="flex-1 flex flex-col items-center justify-center relative z-10 px-4 overflow-y-auto">
+        <div className="mb-6"><LiveOrb state={orbState} size={220} /></div>
 
-        {!currentTranscript && !currentResponse && (
-          <div className="w-full max-w-md text-center">
-            <p className="text-sm text-white/70 mb-4">
-              Legba Live est en veille. Aucune question ne sera lancée
-              automatiquement.
-            </p>
-            <button
-              type="button"
-              onClick={isListening ? stopListening : startListening}
-              className="w-full glass-button rounded-xl py-3 text-sm font-medium"
-            >
-              {isListening ? 'Arrêter l’écoute' : '🎙️ Démarrer l’écoute'}
-            </button>
+        <div className="w-full max-w-md space-y-3">
+          <div className="glass-card rounded-2xl px-4 py-3 border border-white/10">
+            <p className="text-[10px] text-white/40 mb-1">Transcription</p>
+            <p className="text-sm text-white/90 min-h-6">{currentTranscript || 'Parlez normalement. Le traitement démarre après un court silence.'}</p>
           </div>
-        )}
 
-        {currentTranscript && (
-          <div className="w-full max-w-md mb-3 flex gap-2">
-            <button
-              type="button"
-              onClick={processQuestion}
-              disabled={isListening || isProcessing}
-              className="flex-1 glass-button rounded-xl py-3 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isProcessing ? 'Analyse…' : 'Traiter la question'}
-            </button>
-            {isListening && (
-              <button
-                type="button"
-                onClick={stopListening}
-                className="glass-card rounded-xl px-4 py-3 text-sm text-white/70 border border-white/10"
-              >
-                Terminer
-              </button>
-            )}
-          </div>
-        )}
+          <input
+            value={textInput}
+            onChange={(event) => setTextInput(event.target.value)}
+            placeholder="Ou écrivez votre question…"
+            className="w-full glass-input rounded-xl px-4 py-3 text-sm"
+            aria-label="Question textuelle"
+          />
 
-        {currentTranscript && (
-          <div className="w-full max-w-md mb-4 animate-fade-in">
-            <div className="glass-card rounded-2xl px-4 py-3 border border-cyan-neon/20 bg-cyan-neon/5">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-[10px] text-cyan-neon font-medium">
-                  Vous
-                </span>
-              </div>
-              <p className="text-sm text-white/90 leading-relaxed">
-                {currentTranscript}
-              </p>
-            </div>
-          </div>
-        )}
-
-        {currentResponse && (
-          <div className="w-full max-w-md mb-4 animate-fade-in">
+          {currentResponse && (
             <div className="glass-card rounded-2xl px-4 py-3 border border-metallic-gold/20 bg-metallic-gold/5">
               <div className="flex items-center gap-2 mb-1">
                 <LegbaIcon className="w-3 h-3" color="#FFD700" />
-                <span className="text-[10px] text-metallic-gold font-medium">
-                  Legba Note
-                </span>
+                <span className="text-[10px] text-metallic-gold font-medium">Legba Note • Gemini</span>
               </div>
-              <p className="text-sm text-white/90 leading-relaxed">
-                {currentResponse}
-              </p>
-
-              {sources.length > 0 && (
-                <div className="mt-3 pt-2 border-t border-white/10">
-                  <p className="text-[10px] text-white/50 mb-1.5">
-                    Sources :
-                  </p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {sources.map((source, i) => (
-                      <span
-                        key={`${source}-${i}`}
-                        className="text-[10px] bg-cyan-neon/10 text-cyan-neon px-2 py-1 rounded-full border border-cyan-neon/20"
-                      >
-                        {source}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
+              <p className="text-sm text-white/90 leading-relaxed">{currentResponse}</p>
+              {sources.length > 0 && <p className="mt-2 text-[10px] text-cyan-neon">Notes utilisées : {sources.join(', ')}</p>}
             </div>
-          </div>
-        )}
+          )}
 
-        {voiceError && (
-          <div className="w-full max-w-md mb-4 glass-card rounded-xl px-4 py-3 border border-red-400/20 bg-red-500/5">
-            <p className="text-xs text-red-300">{voiceError}</p>
-          </div>
-        )}
+          {voiceError && <div className="glass-card rounded-xl px-4 py-3 border border-red-400/20"><p className="text-xs text-red-300">{voiceError}</p></div>}
 
-        {(currentTranscript || currentResponse || voiceError) && (
-          <button
-            type="button"
-            onClick={clearCurrentConversation}
-            className="text-[10px] text-white/50 hover:text-white/80"
-          >
-            Effacer la session
-          </button>
-        )}
+          {history.length > 0 && (
+            <div className="glass-card rounded-2xl p-3 border border-white/10">
+              <p className="text-[10px] text-white/40 mb-2">Historique persistant</p>
+              <div className="space-y-2 max-h-32 overflow-y-auto">
+                {history.slice(-5).reverse().map((item) => (
+                  <div key={item.id} className="text-[10px] text-white/70">
+                    <span className="text-cyan-neon">Vous :</span> {item.question}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Intentionally empty on first render. No demo/test item is inserted. */}
-      {history.length > 0 && (
-        <div className="absolute bottom-24 right-4 z-20">
-          <div className="glass-card rounded-2xl p-3 border border-white/10 max-w-xs">
-            <p className="text-[10px] text-white/50 mb-2 font-medium">
-              Historique récent
-            </p>
-            <div className="space-y-2 max-h-40 overflow-y-auto">
-              {history.slice(-3).reverse().map((item, i) => (
-                <div
-                  key={`${item.question}-${i}`}
-                  className="glass-card rounded-lg p-2 border border-white/5 bg-white/5"
-                >
-                  <p className="text-[10px] text-white/70 line-clamp-2">
-                    {item.question}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
       <div className="relative z-10 px-4 pb-4">
-        <div className="glass-card rounded-2xl px-4 py-3 border border-white/10">
-          <div className="flex items-center justify-between text-[10px] text-white/50">
-            <span>Conversation continue • Mains libres</span>
-            <span>SQLite local actif</span>
-          </div>
+        <div className="glass-card rounded-2xl px-4 py-3 border border-white/10 text-[10px] text-white/40 text-center">
+          Mode mains libres • détection de silence • RAG local • Gemini • TTS
         </div>
       </div>
     </div>
