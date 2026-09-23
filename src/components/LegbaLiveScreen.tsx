@@ -5,6 +5,7 @@ import WebEnvironmentWarning from './WebEnvironmentWarning';
 import { useEnvironment, isWebEnvironment } from '../hooks/useEnvironment';
 import { loadHistory, saveHistory, type StoredCourse, type StoredHistoryItem } from '../lib/storage';
 import { retrieveRelevantChunks, type RagChunk } from '../lib/rag';
+import { loadVoiceSettings } from '../lib/voice';
 
 type SpeechRecognitionLike = {
   continuous: boolean;
@@ -34,8 +35,6 @@ interface LegbaLiveScreenProps {
   courses: StoredCourse[];
 }
 
-const SILENCE_MS = 900;
-
 export default function LegbaLiveScreen({ courses }: LegbaLiveScreenProps) {
   const env = useEnvironment();
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
@@ -56,6 +55,7 @@ export default function LegbaLiveScreen({ courses }: LegbaLiveScreenProps) {
   const [isListening, setIsListening] = useState(false);
   const [textInput, setTextInput] = useState('');
   const [showWebWarning, setShowWebWarning] = useState(true);
+  const voiceSettings = loadVoiceSettings();
 
   useEffect(() => saveHistory(history), [history]);
 
@@ -64,7 +64,7 @@ export default function LegbaLiveScreen({ courses }: LegbaLiveScreenProps) {
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'fr-FR';
-    utterance.rate = 0.96;
+    utterance.rate = voiceSettings.speechRate;
     utterance.pitch = 1;
     utterance.volume = 1;
     ttsRef.current = utterance;
@@ -131,7 +131,7 @@ export default function LegbaLiveScreen({ courses }: LegbaLiveScreenProps) {
         }, 250);
       }
     }
-  }, [courses, speak, stopListening]);
+  }, [courses, speak, stopListening, voiceSettings.speechRate]);
 
   const scheduleSilenceProcessing = useCallback(() => {
     if (silenceTimerRef.current) window.clearTimeout(silenceTimerRef.current);
@@ -140,7 +140,7 @@ export default function LegbaLiveScreen({ courses }: LegbaLiveScreenProps) {
       if (finalTranscriptRef.current.trim() && !processingRef.current) {
         void processQuestion();
       }
-    }, SILENCE_MS);
+    }, voiceSettings.silenceMs);
   }, [processQuestion]);
 
   const startRecognition = useCallback(async () => {
@@ -156,9 +156,9 @@ export default function LegbaLiveScreen({ courses }: LegbaLiveScreenProps) {
       if (!streamRef.current) {
         streamRef.current = await navigator.mediaDevices.getUserMedia({
           audio: {
-            echoCancellation: true,
-            noiseSuppression: true,
-            autoGainControl: true,
+            echoCancellation: voiceSettings.echoCancellation,
+            noiseSuppression: voiceSettings.noiseSuppression,
+            autoGainControl: voiceSettings.autoGainControl,
             channelCount: 1,
           },
         });
@@ -222,7 +222,7 @@ export default function LegbaLiveScreen({ courses }: LegbaLiveScreenProps) {
       setVoiceError(error instanceof Error ? error.message : 'Impossible d’activer le microphone.');
       setIsListening(false);
     }
-  }, [processQuestion, scheduleSilenceProcessing]);
+  }, [processQuestion, scheduleSilenceProcessing, voiceSettings]);
 
   useEffect(() => {
     activeRef.current = true;
@@ -245,7 +245,7 @@ export default function LegbaLiveScreen({ courses }: LegbaLiveScreenProps) {
       if (!processingRef.current) void processQuestion(textInput.trim());
     }, SILENCE_MS);
     return () => window.clearTimeout(timer);
-  }, [textInput, processQuestion]);
+  }, [textInput, processQuestion, voiceSettings.silenceMs]);
 
   return (
     <div className="h-full flex flex-col relative overflow-hidden">
