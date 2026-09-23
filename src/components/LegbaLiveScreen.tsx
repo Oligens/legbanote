@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import LiveOrb, { OrbState } from './LiveOrb';
 import LegbaIcon from './LegbaIcon';
 import WebEnvironmentWarning from './WebEnvironmentWarning';
@@ -55,7 +55,7 @@ export default function LegbaLiveScreen({ courses }: LegbaLiveScreenProps) {
   const [isListening, setIsListening] = useState(false);
   const [textInput, setTextInput] = useState('');
   const [showWebWarning, setShowWebWarning] = useState(true);
-  const voiceSettings = loadVoiceSettings();
+  const voiceSettings = useMemo(() => loadVoiceSettings(), []);
 
   useEffect(() => saveHistory(history), [history]);
 
