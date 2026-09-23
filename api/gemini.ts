@@ -66,8 +66,11 @@ export default async function handler(req: any, res: any) {
             'x-goog-api-key': apiKey,
           },
           body: JSON.stringify({
-            systemInstruction: { parts: [{ text: systemInstruction }] },
+            system_instruction: { parts: [{ text: systemInstruction }] },
             contents: [{ role: 'user', parts: [{ text: question.trim() }] }],
+            generationConfig: {
+              thinkingConfig: { thinkingLevel: 'low' },
+            },
           }),
           signal: controller.signal,
         }
