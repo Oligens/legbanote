@@ -2,7 +2,7 @@ import { useState } from 'react';
 import LegbaIcon from './LegbaIcon';
 
 interface AuthScreenProps {
-  onLogin: () => void;
+  onLogin: (username: string) => void;
 }
 
 export default function AuthScreen({ onLogin }: AuthScreenProps) {
@@ -13,11 +13,11 @@ export default function AuthScreen({ onLogin }: AuthScreenProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const identity = username.trim();
+    if (!identity || !password) return;
     setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-      onLogin();
-    }, 1500);
+    onLogin(identity);
+    setIsLoading(false);
   };
 
   return (
@@ -134,7 +134,7 @@ export default function AuthScreen({ onLogin }: AuthScreenProps) {
 
           {/* Biometric Button */}
           <button
-            onClick={onLogin}
+            onClick={() => onLogin(username.trim() || 'biometric-user')}
             className="w-full glass-button-gold rounded-xl py-3.5 text-sm font-semibold flex items-center justify-center gap-2"
           >
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
