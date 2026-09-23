@@ -127,6 +127,7 @@ export default function LegbaLiveScreen({ courses }: LegbaLiveScreenProps) {
     } finally {
       finalTranscriptRef.current = '';
       interimTranscriptRef.current = '';
+      setCurrentTranscript('');
       setTextInput('');
       processingRef.current = false;
       setOrbState('idle');
