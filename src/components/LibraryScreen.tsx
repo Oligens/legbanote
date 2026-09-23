@@ -3,74 +3,52 @@ import type { Screen } from '../App';
 import EmptyState from './EmptyState';
 import CreateCourseModal from './CreateCourseModal';
 import ImportDocumentModal from './ImportDocumentModal';
+import type { StoredCourse, StoredDocument } from '../lib/storage';
 
 interface LibraryScreenProps {
   onNavigate: (screen: Screen) => void;
 }
 
-interface Course {
-  id: number;
-  title: string;
-  chapters: number;
-  icon: string;
-  gradient: string;
-  border: string;
-  documents: number;
-  createdAt: string;
+interface LibraryScreenProps {
+  onNavigate: (screen: Screen) => void;
+  courses: StoredCourse[];
+  setCourses: React.Dispatch<React.SetStateAction<StoredCourse[]>>;
 }
 
-export default function LibraryScreen({ onNavigate }: LibraryScreenProps) {
+
+export default function LibraryScreen({ onNavigate, courses, setCourses }: LibraryScreenProps) {
   const [courses, setCourses] = useState<Course[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
-  const [selectedCourseId, setSelectedCourseId] = useState<number | null>(null);
+  const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
 
   const handleCreateCourse = (title: string, icon: string) => {
-    const gradients = [
-      'from-cyan-500/20 to-blue-500/20',
-      'from-metallic-gold/20 to-amber-500/20',
-      'from-purple-500/20 to-indigo-500/20',
-      'from-emerald-500/20 to-teal-500/20',
-      'from-rose-500/20 to-pink-500/20',
-    ];
-    const borders = [
-      'border-cyan-400/20',
-      'border-metallic-gold/20',
-      'border-purple-400/20',
-      'border-emerald-400/20',
-      'border-rose-400/20',
-    ];
-    const randomIndex = Math.floor(Math.random() * gradients.length);
-
-    const newCourse: Course = {
-      id: Date.now(),
+    const newCourse: StoredCourse = {
+      id: crypto.randomUUID(),
       title,
-      chapters: 0,
       icon,
-      gradient: gradients[randomIndex],
-      border: borders[randomIndex],
-      documents: 0,
+      documents: [],
       createdAt: new Date().toISOString(),
     };
-
-    setCourses([...courses, newCourse]);
+    setCourses((items) => [...items, newCourse]);
     setShowCreateModal(false);
   };
 
-  const handleImportDocument = (courseId: number, fileName: string) => {
-    setCourses(courses.map(course => 
-      course.id === courseId 
-        ? { ...course, documents: course.documents + 1, chapters: course.chapters + 1 }
+  const handleImportDocument = (courseId: string, document: StoredDocument) => {
+    setCourses((items) => items.map((course) =>
+      course.id === courseId
+        ? { ...course, documents: [...course.documents, document] }
         : course
     ));
     setShowImportModal(false);
     setSelectedCourseId(null);
   };
 
-  const openImportModal = (courseId: number) => {
+  const openImportModal = (courseId: string) => {
     setSelectedCourseId(courseId);
     setShowImportModal(true);
   };
+
 
   return (
     <div className="h-full overflow-y-auto px-4 pb-4">
@@ -124,7 +102,7 @@ export default function LibraryScreen({ onNavigate }: LibraryScreenProps) {
                   <svg className="w-3 h-3 text-text-muted" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
-                  <span className="text-[10px] text-text-muted">{course.documents} docs</span>
+                  <span className="text-[10px] text-text-muted">{course.documents.length} docs</span>
                 </div>
                 
                 {/* Import Button */}
