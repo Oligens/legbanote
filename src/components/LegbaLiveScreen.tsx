@@ -69,7 +69,7 @@ export default function LegbaLiveScreen({ courses }: LegbaLiveScreenProps) {
     utterance.volume = 1;
     ttsRef.current = utterance;
     window.speechSynthesis.speak(utterance);
-  }, []);
+  }, [voiceSettings.speechRate]);
 
   const stopListening = useCallback(() => {
     if (silenceTimerRef.current) window.clearTimeout(silenceTimerRef.current);
@@ -141,7 +141,7 @@ export default function LegbaLiveScreen({ courses }: LegbaLiveScreenProps) {
         void processQuestion();
       }
     }, voiceSettings.silenceMs);
-  }, [processQuestion]);
+  }, [processQuestion, voiceSettings.silenceMs]);
 
   const startRecognition = useCallback(async () => {
     if (!activeRef.current || processingRef.current || recognitionRef.current) return;
@@ -243,7 +243,7 @@ export default function LegbaLiveScreen({ courses }: LegbaLiveScreenProps) {
     if (!textInput.trim()) return;
     const timer = window.setTimeout(() => {
       if (!processingRef.current) void processQuestion(textInput.trim());
-    }, SILENCE_MS);
+    }, voiceSettings.silenceMs);
     return () => window.clearTimeout(timer);
   }, [textInput, processQuestion, voiceSettings.silenceMs]);
 
