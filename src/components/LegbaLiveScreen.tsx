@@ -40,13 +40,15 @@ declare global {
 export default function LegbaLiveScreen() {
   const env = useEnvironment();
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+  const transcriptRef = useRef('');
 
   // IMPORTANT: the Live screen is deliberately passive on mount.
   const [orbState, setOrbState] = useState<OrbState>('idle');
   const [currentTranscript, setCurrentTranscript] = useState('');
   const [currentResponse, setCurrentResponse] = useState('');
   const [sources, setSources] = useState<string[]>([]);
-  const [history] = useState<HistoryItem[]>([]);
+  const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [voiceError, setVoiceError] = useState('');
   const [isBluetoothConnected] = useState(false);
@@ -74,6 +76,7 @@ export default function LegbaLiveScreen() {
 
     setVoiceError('');
     setCurrentTranscript('');
+    transcriptRef.current = '';
     setCurrentResponse('');
     setSources([]);
     setOrbState('listening');
@@ -89,19 +92,27 @@ export default function LegbaLiveScreen() {
     };
 
     recognition.onresult = (event) => {
-      let transcript = '';
+      let finalTranscript = transcriptRef.current;
+      let interimTranscript = '';
 
       for (let i = event.resultIndex; i < event.results.length; i += 1) {
-        transcript += event.results[i][0].transcript;
+        const result = event.results[i];
+        if (result.isFinal) {
+          finalTranscript += `${result[0].transcript} `;
+        } else {
+          interimTranscript += result[0].transcript;
+        }
       }
 
-      if (transcript.trim()) {
-        setCurrentTranscript(transcript.trim());
+      transcriptRef.current = finalTranscript.trim();
+      const visibleTranscript = `${transcriptRef.current} ${interimTranscript}`.trim();
+      if (visibleTranscript) {
+        setCurrentTranscript(visibleTranscript);
       }
 
-      // Deliberately do NOT call an API or generate a question here.
-      // A real final transcript is only displayed; application processing
-      // must be triggered by the existing explicit conversation action.
+      // Speech recognition only transcribes. No question is generated here.
+      // Processing happens only after the user explicitly presses the action
+      // button below, which prevents any automatic conversation on startup.
     };
 
     recognition.onerror = (event) => {
@@ -132,12 +143,38 @@ export default function LegbaLiveScreen() {
     }
   }, []);
 
+  const processQuestion = useCallback(() => {
+    const question = transcriptRef.current.trim();
+    if (!question || isListening || isProcessing) return;
+
+    setIsProcessing(true);
+    setOrbState('processing');
+    setCurrentResponse('');
+    setSources([]);
+
+    // There is currently no remote AI endpoint in this repository. Do not
+    // fabricate an answer: persist the real spoken question and expose the
+    // explicit hand-off state instead.
+    const response =
+      'Question enregistrée. Aucun moteur de réponse distant n’est connecté à Legba Live pour le moment.';
+
+    setCurrentResponse(response);
+    setHistory((items) => [
+      ...items,
+      { question, answer: response, sources: [] },
+    ]);
+    setOrbState('idle');
+    setIsProcessing(false);
+  }, [isListening, isProcessing]);
+
   const clearCurrentConversation = () => {
     stopListening();
     setCurrentTranscript('');
+    transcriptRef.current = '';
     setCurrentResponse('');
     setSources([]);
     setVoiceError('');
+    setIsProcessing(false);
     setOrbState('idle');
   };
 
@@ -228,6 +265,28 @@ export default function LegbaLiveScreen() {
             >
               {isListening ? 'Arrêter l’écoute' : '🎙️ Démarrer l’écoute'}
             </button>
+          </div>
+        )}
+
+        {currentTranscript && (
+          <div className="w-full max-w-md mb-3 flex gap-2">
+            <button
+              type="button"
+              onClick={processQuestion}
+              disabled={isListening || isProcessing}
+              className="flex-1 glass-button rounded-xl py-3 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isProcessing ? 'Analyse…' : 'Traiter la question'}
+            </button>
+            {isListening && (
+              <button
+                type="button"
+                onClick={stopListening}
+                className="glass-card rounded-xl px-4 py-3 text-sm text-white/70 border border-white/10"
+              >
+                Terminer
+              </button>
+            )}
           </div>
         )}
 
