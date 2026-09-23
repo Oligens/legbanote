@@ -3,13 +3,10 @@ import AuthScreen from './components/AuthScreen';
 import LibraryScreen from './components/LibraryScreen';
 import LegbaLiveScreen from './components/LegbaLiveScreen';
 import VoiceSettingsScreen from './components/VoiceSettingsScreen';
-import AudioPipelineDemo from './components/AudioPipelineDemo';
-import UniversalImportDemo from './components/UniversalImportDemo';
-import AudioDeviceDetection from './components/AudioDeviceDetection';
 import LegbaIcon from './components/LegbaIcon';
 import { clearSession, loadCourses, loadSession, saveCourses, saveSession, type StoredCourse } from './lib/storage';
 
-export type Screen = 'auth' | 'library' | 'live' | 'voice' | 'audio-fix' | 'import-fix' | 'device-detect';
+export type Screen = 'auth' | 'library' | 'live' | 'voice';
 
 export default function App() {
   const [activeScreen, setActiveScreen] = useState<Screen>('auth');
@@ -55,33 +52,7 @@ export default function App() {
         </svg>
       ),
     },
-    {
-      id: 'audio-fix',
-      label: 'Audio Fix',
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-        </svg>
-      ),
-    },
-    {
-      id: 'import-fix',
-      label: 'Import',
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-        </svg>
-      ),
-    },
-    {
-      id: 'device-detect',
-      label: 'Device',
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
-        </svg>
-      ),
-    },
+
   ];
 
   if (!isAuthenticated) {
@@ -111,9 +82,6 @@ export default function App() {
                 {activeScreen === 'library' && 'Gestion des cours'}
                 {activeScreen === 'live' && 'Conversation continue'}
                 {activeScreen === 'voice' && 'Configuration vocale'}
-                {activeScreen === 'audio-fix' && 'Correction Pipeline Audio'}
-                {activeScreen === 'import-fix' && 'Importation Universelle'}
-                {activeScreen === 'device-detect' && 'Détection Périphérique'}
               </p>
             </div>
           </div>
@@ -132,9 +100,6 @@ export default function App() {
           {activeScreen === 'library' && <LibraryScreen onNavigate={setActiveScreen} courses={courses} setCourses={setCourses} />}
           {activeScreen === 'live' && <LegbaLiveScreen courses={courses} />}
           {activeScreen === 'voice' && <VoiceSettingsScreen />}
-          {activeScreen === 'audio-fix' && <AudioPipelineDemo />}
-          {activeScreen === 'import-fix' && <UniversalImportDemo />}
-          {activeScreen === 'device-detect' && <AudioDeviceDetection />}
         </div>
 
         {/* Bottom Navigation */}
