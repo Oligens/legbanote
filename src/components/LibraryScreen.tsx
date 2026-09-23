@@ -3,7 +3,7 @@ import type { Screen } from '../App';
 import EmptyState from './EmptyState';
 import CreateCourseModal from './CreateCourseModal';
 import ImportDocumentModal from './ImportDocumentModal';
-import type { StoredCourse, StoredDocument } from '../lib/storage';
+import { saveCourses, type StoredCourse, type StoredDocument } from '../lib/storage';
 
 interface LibraryScreenProps {
   onNavigate: (screen: Screen) => void;
@@ -17,19 +17,23 @@ export default function LibraryScreen({ onNavigate, courses, setCourses }: Libra
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
 
   const handleCreateCourse = (title: string, icon: string) => {
-    setCourses((items) => [
-      ...items,
+    const nextCourses: StoredCourse[] = [
+      ...courses,
       { id: crypto.randomUUID(), title, icon, documents: [], createdAt: new Date().toISOString() },
-    ]);
+    ];
+    saveCourses(nextCourses);
+    setCourses(nextCourses);
     setShowCreateModal(false);
   };
 
   const handleImportDocument = (courseId: string, document: StoredDocument) => {
-    setCourses((items) => items.map((course) =>
+    const nextCourses = courses.map((course) =>
       course.id === courseId
         ? { ...course, documents: [...course.documents, document] }
         : course
-    ));
+    );
+    saveCourses(nextCourses);
+    setCourses(nextCourses);
     setShowImportModal(false);
     setSelectedCourseId(null);
   };
