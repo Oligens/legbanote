@@ -111,16 +111,18 @@ export default function LegbaLiveScreen({ courses }: LegbaLiveScreenProps) {
 
       setCurrentResponse(answer);
       setSources(Array.isArray(data.sources) ? data.sources : []);
-      setHistory((items) => [
-        ...items,
-        {
-          id: crypto.randomUUID(),
-          question,
-          answer,
-          sources: Array.isArray(data.sources) ? data.sources : [],
-          createdAt: new Date().toISOString(),
-        },
-      ]);
+      const historyItem: StoredHistoryItem = {
+        id: crypto.randomUUID(),
+        question,
+        answer,
+        sources: Array.isArray(data.sources) ? data.sources : [],
+        createdAt: new Date().toISOString(),
+      };
+      setHistory((items) => {
+        const nextHistory = [...items, historyItem];
+        saveHistory(nextHistory);
+        return nextHistory;
+      });
       speak(answer);
     } catch (error) {
       setVoiceError(error instanceof Error ? error.message : 'Erreur pendant la réponse Gemini.');
