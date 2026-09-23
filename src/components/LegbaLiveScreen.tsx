@@ -45,6 +45,7 @@ export default function LegbaLiveScreen({ courses }: LegbaLiveScreenProps) {
   const activeRef = useRef(true);
   const processingRef = useRef(false);
   const ttsRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const startRecognitionRef = useRef<(() => Promise<void>) | null>(null);
 
   const [orbState, setOrbState] = useState<OrbState>('idle');
   const [currentTranscript, setCurrentTranscript] = useState('');
@@ -68,6 +69,11 @@ export default function LegbaLiveScreen({ courses }: LegbaLiveScreenProps) {
     utterance.pitch = 1;
     utterance.volume = 1;
     ttsRef.current = utterance;
+    utterance.onend = () => {
+      if (activeRef.current && !processingRef.current) {
+        window.setTimeout(() => startRecognitionRef.current?.(), 150);
+      }
+    };
     window.speechSynthesis.speak(utterance);
   }, [voiceSettings.speechRate]);
 
@@ -126,9 +132,7 @@ export default function LegbaLiveScreen({ courses }: LegbaLiveScreenProps) {
       setOrbState('idle');
 
       if (activeRef.current && !('speechSynthesis' in window && window.speechSynthesis.speaking)) {
-        window.setTimeout(() => {
-          if (activeRef.current) startRecognition();
-        }, 250);
+        window.setTimeout(() => startRecognitionRef.current?.(), 250);
       }
     }
   }, [courses, speak, stopListening, voiceSettings.speechRate]);
@@ -223,6 +227,8 @@ export default function LegbaLiveScreen({ courses }: LegbaLiveScreenProps) {
       setIsListening(false);
     }
   }, [processQuestion, scheduleSilenceProcessing, voiceSettings]);
+
+  startRecognitionRef.current = startRecognition;
 
   useEffect(() => {
     activeRef.current = true;
