@@ -4,9 +4,12 @@ export default async function handler(req: any, res: any) {
     return;
   }
 
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY;
   if (!apiKey) {
-    res.status(500).json({ error: 'GEMINI_API_KEY is not configured on the server.' });
+    res.status(500).json({
+      error: 'Gemini API key is not configured on Vercel. Add GEMINI_API_KEY in Project Settings > Environment Variables and redeploy.',
+      code: 'GEMINI_API_KEY_MISSING',
+    });
     return;
   }
 
@@ -43,27 +46,56 @@ export default async function handler(req: any, res: any) {
     'Contexte local RAG:\n' + (contextText || '[Aucun contexte local pertinent]'),
   ].join('\n\n');
 
-  try {
-    const response = await fetch(
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent',
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-goog-api-key': apiKey,
-        },
-        body: JSON.stringify({
-          systemInstruction: { parts: [{ text: systemInstruction }] },
-          contents: [{ role: 'user', parts: [{ text: question.trim() }] }],
-          generationConfig: { temperature: 0.25 },
-        }),
-      }
-    );
+  const model = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
 
-    const data = await response.json();
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30_000);
+
+    let response: Response;
+    try {
+      response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-goog-api-key': apiKey,
+          },
+          body: JSON.stringify({
+            systemInstruction: { parts: [{ text: systemInstruction }] },
+            contents: [{ role: 'user', parts: [{ text: question.trim() }] }],
+          }),
+          signal: controller.signal,
+        }
+      );
+    } finally {
+      clearTimeout(timeout);
+    }
+
+    const rawBody = await response.text();
+    let data: any = null;
+    try {
+      data = rawBody ? JSON.parse(rawBody) : null;
+    } catch {
+      data = null;
+    }
+
     if (!response.ok) {
-      res.status(response.status).json({
-        error: data?.error?.message || 'Gemini request failed',
+      const providerMessage =
+        data?.error?.message ||
+        rawBody ||
+        `Gemini API returned HTTP ${response.status}`;
+
+      console.error('[api/gemini] Gemini provider error', {
+        status: response.status,
+        model,
+        message: providerMessage,
+      });
+
+      res.status(response.status >= 500 ? 502 : response.status).json({
+        error: providerMessage,
+        code: 'GEMINI_PROVIDER_ERROR',
       });
       return;
     }
@@ -75,7 +107,11 @@ export default async function handler(req: any, res: any) {
         .trim() || '';
 
     if (!answer) {
-      res.status(502).json({ error: 'Gemini returned an empty response.' });
+      console.error('[api/gemini] Gemini returned no text', { model, data });
+      res.status(502).json({
+        error: 'Gemini returned an empty response.',
+        code: 'GEMINI_EMPTY_RESPONSE',
+      });
       return;
     }
 
@@ -83,12 +119,21 @@ export default async function handler(req: any, res: any) {
       answer,
       usedLocalContext: hasLocalContext,
       sources: Array.isArray(context)
-        ? context.slice(0, 6).map((item: any) => item.documentName).filter(Boolean)
+        ? context.slice(0, 6).map((item: any) => item?.documentName).filter(Boolean)
         : [],
     });
   } catch (error) {
+    const message =
+      error instanceof Error
+        ? error.name === 'AbortError'
+          ? 'Gemini request timed out after 30 seconds.'
+          : error.message
+        : 'Unexpected Gemini error';
+
+    console.error('[api/gemini] Server error', error);
     res.status(500).json({
-      error: error instanceof Error ? error.message : 'Unexpected Gemini error',
+      error: message,
+      code: 'GEMINI_SERVER_ERROR',
     });
   }
 }
