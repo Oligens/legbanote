@@ -1,3 +1,6 @@
+type ServerEnv = { env: Record<string, string | undefined> };
+declare const process: ServerEnv;
+
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Method not allowed' });
