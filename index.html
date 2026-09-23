@@ -164,22 +164,6 @@
         });
       }
       
-      // Demander les permissions audio au chargement
-      async function requestAudioPermissions() {
-        try {
-          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-          console.log('[PWA] Permission microphone accordée');
-          stream.getTracks().forEach(track => track.stop());
-        } catch (error) {
-          console.warn('[PWA] Permission microphone refusée:', error.message);
-        }
-      }
-      
-      // Demander les permissions après interaction utilisateur
-      document.addEventListener('click', function requestOnce() {
-        requestAudioPermissions();
-        document.removeEventListener('click', requestOnce);
-      }, { once: true });
-    </script>
+      // Le microphone est demandé uniquement par l'action explicite\n      // « Démarrer l’écoute » dans LegbaLiveScreen.\n      // Aucun getUserMedia automatique au chargement ou au clic global.\n    </script>
   </body>
 </html>
