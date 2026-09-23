@@ -130,7 +130,7 @@ export default function App() {
         {/* Screen Content */}
         <div className="flex-1 overflow-hidden">
           {activeScreen === 'library' && <LibraryScreen onNavigate={setActiveScreen} courses={courses} setCourses={setCourses} />}
-          {activeScreen === 'live' && <LegbaLiveScreen />}
+          {activeScreen === 'live' && <LegbaLiveScreen courses={courses} />}
           {activeScreen === 'voice' && <VoiceSettingsScreen />}
           {activeScreen === 'audio-fix' && <AudioPipelineDemo />}
           {activeScreen === 'import-fix' && <UniversalImportDemo />}
